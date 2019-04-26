@@ -1,33 +1,3 @@
-/*
-  A super duper simple, reusable, vanilla WebGL class for rendering a fragment shader.
-  Useful for when all you want is to render your GLSL on-screen.
-
-  TODO:
-  - Add support for texture inputs
-
-  Example Usage:
-  ---
-  // Init
-  this.shader = new Shader2d( this.$refs.canvas, vertSource, fragSource, {
-    u_yourUniform: {
-      type: 'vec3',
-      value: { x: 0, y: 0, z: 0 }
-    }
-  } )
-
-  // Resize
-  this.shader.resize( width, height )
-
-  // Tick
-  this.shader.render( performance.now() )
-
-  // Update
-  this.shader.updateUniforms( {
-    u_mouse: { x: e.clientX, y: e.clientY }
-  } )
-
-*/
-
 const vertDefault = `
   attribute vec4 a_position;
   varying vec2 v_pos;
@@ -79,6 +49,32 @@ function createProgram( gl, vert, frag ) {
   else {
     console.log( `Program error: \n --- \n`, gl.getProgramInfoLog( program ) )
     gl.deleteProgram( program )
+  }
+}
+
+function setUniform( gl, uniform ) {
+
+  const { type, location, value } = uniform
+
+  switch ( type ) {
+    case 'bool':
+      gl.uniform1i( location, value === true ? 1 : 0 )
+      break
+    case 'int':
+      gl.uniform1i( location, value )
+      break
+    case 'float':
+      gl.uniform1f( location, value )
+      break
+    case 'vec2':
+      gl.uniform2f( location, value.x, value.y )
+      break
+    case 'vec3':
+      gl.uniform3f( location, value.x, value.y, value.z )
+      break
+    case 'vec4':
+      gl.uniform4f( location, value.x, value.y, value.z, value.w )
+      break
   }
 }
 
@@ -173,10 +169,7 @@ export default class Shader2d {
     // Update uniforms
     Object.keys( this.uniforms ).forEach( name => {
       const uniform = this.uniforms[ name ]
-      if ( uniform.type === 'vec4' ) gl.uniform4f( uniform.location, uniform.value.x, uniform.value.y, uniform.value.z, uniform.value.w )
-      else if ( uniform.type === 'vec3' ) gl.uniform3f( uniform.location, uniform.value.x, uniform.value.y, uniform.value.z )
-      else if ( uniform.type === 'vec2' ) gl.uniform2f( uniform.location, uniform.value.x, uniform.value.y )
-      else gl.uniform1f( uniform.location, uniform.value )
+      setUniform( gl, uniform )
     } )
 
     // Draw
