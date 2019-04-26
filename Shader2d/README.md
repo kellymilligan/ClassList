@@ -2,6 +2,12 @@
 
 ---
 
+### Notes:
+- Currently supported uniform types: `bool`, `int`, `float`, `vec2`, `vec3`, `vec4`
+- Vector uniforms must be passed as an object with `x`, `y`, [ `z`, `w` ] keys
+
+---
+
 ### TODO:
 - Add support for texture (Sampler2D) uniforms
 
