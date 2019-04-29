@@ -1,5 +1,5 @@
 # classroom
-Reusable classes for working with different canvas contexts
+Reusable classes for working with the browser and different canvas contexts
 
 ## Canvas
 Standardized setup class for working with the canvas 2d context, abstracting away some of the more annoying bits. Allows you to focus on the primary `draw()` call
