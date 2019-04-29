@@ -3,7 +3,7 @@ import defaultsDeep from 'lodash.defaultsdeep'
 import viewport from '@/utils/ViewportManager'
 import dataUrlToBlob from '@/utils/canvas/dataUrlToBlob'
 
-export default class Canvas2D {
+export default class Canvas2d {
 
   get defaults() {
     return {
@@ -27,7 +27,7 @@ export default class Canvas2D {
 
   constructor( config = {} ) {
 
-    // console.log('Canvas2D: instance created.')
+    // console.log('Canvas2d: instance created.')
 
     this.config = defaultsDeep( { ...config }, this.defaults )
 
@@ -46,7 +46,7 @@ export default class Canvas2D {
 
   destroy() {
 
-    // console.log('Canvas2D: instance destroyed.')
+    // console.log('Canvas2d: instance destroyed.')
 
     this.config = null
     this.time = null
