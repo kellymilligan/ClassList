@@ -32,3 +32,10 @@ Standardized setup class for working with THREE scenes. Provides abstraction for
 
 ### Shader2d
 A super duper simple, reusable, vanilla WebGL class for rendering a fragment shader. Useful for when all you want is to render your GLSL on-screen.
+
+--- 
+
+## Other
+
+### Tween
+Minimal tween class for interpolating a normalised progress value over a duration.
