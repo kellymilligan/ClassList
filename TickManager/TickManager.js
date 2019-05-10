@@ -16,7 +16,7 @@
 
 */
 
-import { uuid } from '@/utils/math/uniqueId'
+import uuid from '@/utils/uniqueId'
 
 class TickManager {
 
@@ -32,7 +32,7 @@ class TickManager {
     }
   }
 
-  constructor( autostart = true ) {
+  constructor( autostart = false ) {
 
     this.state = { ...this.defaults }
     this.stack = []

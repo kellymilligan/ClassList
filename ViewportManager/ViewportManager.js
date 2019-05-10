@@ -30,7 +30,7 @@ class ViewportManager {
   // and continues to receive updated properties delegated from the Manager for un-changed properties.
   get subscribe() { return Object.create( this.state ) }
 
-  constructor( autobind = true ) {
+  constructor( autobind = false ) {
 
     this.state = { ...this.defaults }
 
@@ -48,46 +48,47 @@ class ViewportManager {
     if ( this.isBound ) { console.error('ViewportManager.js: instance was already bound!'); return }
 
     this.isBound = true
-    this.addEvents()
+    this._addEvents()
   }
 
   unbind() {
 
     this.isBound = false
-    this.removeEvents()
+    this._removeEvents()
   }
 
   // Dependant update
   // (if not binding window events internally, update the Manager from outside)
-  resize = () => this.onResize()
-  scroll = () => this.onScroll()
+  resize = () => this._onResize()
+  scroll = () => this._onScroll()
 
   // Static update
   // (manaually request a viewport udpate from outside)
   refresh() {
-    this.onResize()
-    this.onScroll()
+
+    this._onResize()
+    this._onScroll()
   }
 
   // Bindings
   // --------
 
-  addEvents() {
+  _addEvents() {
 
-    window.addEventListener( 'resize', this.onResize )
-    window.addEventListener( 'scroll', this.onScroll )
+    window.addEventListener( 'resize', this._onResize )
+    window.addEventListener( 'scroll', this._onScroll )
   }
 
-  removeEvents() {
+  _removeEvents() {
 
-    window.removeEventListener( 'resize', this.onResize )
-    window.removeEventListener( 'scroll', this.onScroll )
+    window.removeEventListener( 'resize', this._onResize )
+    window.removeEventListener( 'scroll', this._onScroll )
   }
 
   // Handlers
   // --------
 
-  onResize = () => {
+  _onResize = () => {
 
     const width = window.innerWidth
     const height = window.innerHeight
@@ -100,10 +101,10 @@ class ViewportManager {
     this.state.scrollHeight = document.body.scrollHeight
   }
 
-  onScroll = () => {
+  _onScroll = () => {
 
     this.state.scrollTop = window.pageYOffset
-    this.state.scroll = this.state.scrollTop / ( this.state.scrollHeight - this.state.height )
+    this.state.scroll = this.state.scrollTop === 0 ? 0 : this.state.scrollTop / ( this.state.scrollHeight - this.state.height )
   }
 
 }

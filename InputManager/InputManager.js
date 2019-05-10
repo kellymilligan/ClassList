@@ -7,7 +7,10 @@
 
 */
 
-import ticker from '@/utils/TickManager'
+import ticker from '@/managers/TickManager'
+import { sign } from '@/utils/math'
+
+const WHEEL_SENSITIVITY = 100
 
 export default class InputManager {
 
@@ -17,27 +20,27 @@ export default class InputManager {
       isDown: false,
       isMoving: false,
 
-      // Browser coordinates where top/left is 0/0, and bottom/right is w/h
+      // Pointer browser coordinates where top/left is 0/0, and bottom/right is w/h
       client: {
         x: 0,
         y: 0,
       },
 
-      // Browser coordinates offset to place origin (0/0) at viewport center
+      // Pointer browser coordinates offset to place origin (0/0) at viewport center
       offset: {
         x: 0,
         y: 0,
       },
 
-      // normal coordinates where top/left is 0/0, and bottom/right is 1/1
-      // Can be used with an origin at the viewport center by multiplying by 2
-      // and subtracting 1, giving a range from -1 to +1 on both axes.
+      // Pointer normal coordinates where top/left is 0/0, and bottom/right is 1/1
+      // This is commonly used used with an origin at the viewport center:
+      // normal.[x|y] * 2 - 1, giving a range from -1 to +1 on both axes.
       normal: {
         x: 0,
         y: 0,
       },
 
-      // Distance travelled between current tick and when isDown was set
+      // Pointer distance travelled between current tick and when isDown was set
       travel: {
         startX: 0,
         startY: 0,
@@ -51,6 +54,16 @@ export default class InputManager {
         y: 0,                 // Delta on y-axis
         distance: 0,          // Absolute delta
         prev: { x: 0, y: 0 }, // Previous X,Y normal position, used to calculate delta
+      },
+
+      // Scroll wheel parameters, updated each `wheel` event
+      wheel: {
+        rawDeltaX: 0,
+        rawDeltaY: 0,
+        directionX: 0,
+        directionY: 0,
+        deltaX: 0,
+        deltaY: 0
       }
 
     }
@@ -126,19 +139,17 @@ export default class InputManager {
 
   /*
     Refresh tracking parameters (i.e. resize bounds with window resize)
-    Dimensions can be overridden if passed as arguments
   */
-  refresh(
-    width = window.innerWidth,
-    height = window.innerHeight,
-    left = 0,
-    top = 0
-  ) {
+  refresh( width, height, left, top ) {
 
-    this.env.width = width
-    this.env.height = height
-    this.env.left = left
-    this.env.top = top
+    const elementBounds = this.element.getBoundingClientRect()
+
+    console.log( elementBounds )
+
+    this.env.width = width !== undefined ? width : elementBounds.width
+    this.env.height = height !== undefined ? height : elementBounds.height
+    this.env.left = left !== undefined ? left : elementBounds.left
+    this.env.top = top !== undefined ? top : elementBounds.top
 
     if ( width === 0 ) console.warn( 'InputManager.js: this.element\'s width is currently zero, this will break normal.x calculations due to division by zero.' )
     if ( height === 0 ) console.warn( 'InputManager.js: this.element\'s height is currently zero, this will break normal.y calculations due to division by zero.' )
@@ -164,6 +175,9 @@ export default class InputManager {
     this.element.addEventListener( 'touchstart', this.onTouchStart, false )
     document.addEventListener( 'touchmove', this.onTouchMove, false )
     document.addEventListener( 'touchend', this.onTouchEnd, false )
+
+    if ( 'onwheel' in document ) window.addEventListener( 'wheel', this.onWheel )
+    // if ( 'onmousewheel' in document ) window.addEventListener( 'mousewheel', this.onMouseWheel )
   }
 
   detachEvents() {
@@ -177,6 +191,9 @@ export default class InputManager {
     this.element.removeEventListener( 'touchstart', this.onTouchStart, false )
     document.removeEventListener( 'touchmove', this.onTouchMove, false )
     document.removeEventListener( 'touchend', this.onTouchEnd, false )
+
+    if ( 'onwheel' in document ) window.removeEventListener( 'wheel', this.onWheel )
+    // if ( 'onmousewheel' in document ) window.removeEventListener( 'mousewheel', this.onMouseWheel )
   }
 
   // Helpers
@@ -284,5 +301,22 @@ export default class InputManager {
     e.clientX = e.changedTouches[ 0 ].clientX
     e.clientY = e.changedTouches[ 0 ].clientY
     this.onPointerUp( e )
+  }
+
+  onWheel = e => {
+
+    const rawDeltaX = e.wheelDeltaX || e.deltaX * -1
+    const rawDeltaY = e.wheelDeltaY || e.deltaY * -1
+    const directionX = sign( rawDeltaX )
+    const directionY = sign( rawDeltaY )
+    const deltaX = directionX * WHEEL_SENSITIVITY
+    const deltaY = directionY * WHEEL_SENSITIVITY
+
+    this.tracking.data.wheel = { rawDeltaX, rawDeltaY, directionX, directionY, deltaX, deltaY }
+
+    // Reset after one animation frame, allowing aniamtion loops to listen to wheel updates
+    window.requestAnimationFrame( () => {
+      this.tracking.data.wheel = { ...this.defaults.wheel }
+    } )
   }
 }
