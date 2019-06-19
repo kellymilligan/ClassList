@@ -1,6 +1,4 @@
-import defaultsDeep from 'lodash.defaultsdeep'
-
-import viewport from '@/utils/ViewportManager'
+import viewport from '@/managers/ViewportManager'
 import dataUrlToBlob from '@/utils/canvas/dataUrlToBlob'
 
 export default class Canvas2d {
@@ -27,9 +25,7 @@ export default class Canvas2d {
 
   constructor( config = {} ) {
 
-    // console.log('Canvas2d: instance created.')
-
-    this.config = defaultsDeep( { ...config }, this.defaults )
+    this.config = Object.assign( {}, this.defaults, config )
 
     this.time = {
       start: Date.now(),
@@ -46,7 +42,7 @@ export default class Canvas2d {
 
   destroy() {
 
-    // console.log('Canvas2d: instance destroyed.')
+    this.config.append && this.config.appendTo.removeChild( this.config.canvas )
 
     this.config = null
     this.time = null
@@ -61,6 +57,10 @@ export default class Canvas2d {
 
       this.config.canvas = document.createElement( 'canvas' )
       append && appendTo.appendChild( this.config.canvas )
+    }
+    else {
+
+      this.config.append = false
     }
 
     this.ctx = this.config.canvas.getContext( '2d' )
@@ -94,10 +94,10 @@ export default class Canvas2d {
     this.time.elapsed = this.time.current - this.time.start
     this.time.previous = prev
 
-    this.draw( this.ctx, this.time.delta )
+    this.draw( this.ctx, this.time.delta, this.time.elapsed )
   }
 
   // Abstract
-  draw( ctx, delta ) {}
+  draw( ctx, delta, elapsed ) {}
 
 }
