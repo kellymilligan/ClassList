@@ -6,7 +6,26 @@
   A self contained controller class which keeps track of window parameters.
   Can manage window event bindings interanlly or operate dependantly.
 
+  Items can register to 'resize' or 'scroll' events using the register() or on() methods:
+  const resizeID = ViewportManager.on( 'resize', ( width, height ) => {
+    console.log( widthHeight )
+  } )
+  const scrollID = ViewportManager.on( 'scroll', ( scroll, scrollTop, scrollHeight ) => {
+    console.log( scroll, scrollTop, scrollHeight )
+  } )
+
+  The ID returned from the registration should be used to de-register when needed:
+  ViewportManager.off( resizeID );
+  ViewportManager.off( scrollID );
+
 */
+
+// 128bit UUID
+// https://stackoverflow.com/a/44996682
+function uuid() {
+  const s4 = () => Math.floor( ( 1 + Math.random() ) * 0x10000 ).toString( 16 ).substring( 1 )
+  return `${ s4() + s4() }-${ s4() }-${ s4() }-${ s4() }-${ s4() + s4() + s4() }`
+}
 
 class ViewportManager {
 
@@ -33,6 +52,7 @@ class ViewportManager {
   constructor( autobind = false ) {
 
     this.state = { ...this.defaults }
+    this.stack = []
 
     this.isBound = false
     autobind && this.bind()
@@ -40,12 +60,16 @@ class ViewportManager {
     this.refresh()
   }
 
+
   // Public
   // ------
 
   bind() {
 
-    if ( this.isBound ) { console.error('ViewportManager.js: instance was already bound!'); return }
+    if ( this.isBound ) {
+      console.error( 'ViewportManager.js: instance was already bound!' )
+      return
+    }
 
     this.isBound = true
     this._addEvents()
@@ -57,20 +81,39 @@ class ViewportManager {
     this._removeEvents()
   }
 
-  // Dependant update
-  // (if not binding window events internally, update the Manager from outside)
-  resize = () => this._onResize()
-  scroll = () => this._onScroll()
-
-  // Static update
-  // (manaually request a viewport udpate from outside)
-  refresh() {
-
+  refresh = () => {
     this._onResize()
     this._onScroll()
   }
 
-  // Bindings
+  resize = () => this._onResize() // Manual update
+  scroll = () => this._onScroll() // Manual update
+
+  register( type = 'resize', handler, ID ) {
+
+    const id = ID !== undefined ? ID : uuid()
+
+    if ( type !== 'resize' && type !== 'scroll' ) {
+      console.error( `ViewportManager.js: invalid event registration of type "${ type }"! Must be either 'resize' or 'scroll'.` )
+      return
+    }
+
+    this.stack[ id ] = { type, handler }
+
+    return id
+  }
+
+  deregister( id ) {
+
+    delete this.stack[ id ]
+  }
+
+  // Aliases
+  on = ( type, handler ) => this.register( type, handler )
+  off = id => this.deregister( id )
+
+
+  // Private
   // --------
 
   _addEvents() {
@@ -85,9 +128,6 @@ class ViewportManager {
     window.removeEventListener( 'scroll', this._onScroll )
   }
 
-  // Handlers
-  // --------
-
   _onResize = () => {
 
     const width = window.innerWidth
@@ -99,12 +139,29 @@ class ViewportManager {
 
     this.state.dpr = window.devicePixelRatio
     this.state.scrollHeight = document.body.scrollHeight
+
+    this._propagate( 'resize' )
   }
 
   _onScroll = () => {
 
     this.state.scrollTop = window.pageYOffset
     this.state.scroll = this.state.scrollTop === 0 ? 0 : this.state.scrollTop / ( this.state.scrollHeight - this.state.height )
+
+    this._propagate( 'scroll' )
+  }
+
+  _propagate( type ) {
+
+    const { width, height, scroll, scrollTop, scrollHeight } = this.state
+    const keys = Object.keys( this.stack )
+
+    for ( let i = 0, len = keys.length; i < len; i++ ) {
+      if ( this.stack[ keys[ i ] ][ 'type' ] === type ) {
+        type === 'resize' && this.stack[ keys[ i ] ][ 'handler' ]( width, height )
+        type === 'scroll' && this.stack[ keys[ i ] ][ 'handler' ]( scroll, scrollTop, scrollHeight )
+      }
+    }
   }
 
 }
