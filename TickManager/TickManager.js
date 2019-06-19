@@ -16,7 +16,12 @@
 
 */
 
-import uuid from '@/utils/uniqueId'
+// 128bit UUID
+// https://stackoverflow.com/a/44996682
+function uuid() {
+  const s4 = () => Math.floor( ( 1 + Math.random() ) * 0x10000 ).toString( 16 ).substring( 1 )
+  return `${ s4() + s4() }-${ s4() }-${ s4() }-${ s4() }-${ s4() + s4() + s4() }`
+}
 
 class TickManager {
 
@@ -53,14 +58,14 @@ class TickManager {
 
     this.state.isRunning = true
 
-    this.addEvents()
+    this._addEvents()
   }
 
   stop() {
 
     this.state.isRunning = false
 
-    this.removeEvents()
+    this._removeEvents()
   }
 
   register( handler, ID ) {
@@ -72,44 +77,38 @@ class TickManager {
     return id
   }
 
-  // Alias 'on' for registration
-  on = handler => this.register( handler )
-
   deregister( id ) {
 
     delete this.stack[ id ]
   }
 
-  // Alias 'off' for deregistration
+  // Aliases
+  on = handler => this.register( handler )
   off = id => this.deregister( id )
 
 
-  // Bindings
-  // --------
+  // Private
+  // -------
 
-  addEvents() {
+  _addEvents() {
 
-    this.raf = window.requestAnimationFrame( this.onTick )
+    this.raf = window.requestAnimationFrame( this._onTick )
   }
 
-  removeEvents() {
+  _removeEvents() {
 
     window.cancelAnimationFrame( this.raf )
   }
 
+  _onTick = () => {
 
-  // Handlers
-  // --------
+    this.raf = window.requestAnimationFrame( this._onTick )
 
-  onTick = () => {
-
-    this.raf = window.requestAnimationFrame( this.onTick )
-
-    this.updateTime()
-    this.propogate()
+    this._updateTime()
+    this._propagate()
   }
 
-  updateTime() {
+  _updateTime() {
 
     const now = performance.now()
 
@@ -119,7 +118,7 @@ class TickManager {
     this.state.time.stamp = Date.now()
   }
 
-  propogate() {
+  _propagate() {
 
     const { delta, elapsed, stamp } = this.state.time
     const keys = Object.keys( this.stack )
