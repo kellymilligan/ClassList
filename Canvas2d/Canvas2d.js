@@ -27,14 +27,6 @@ export default class Canvas2d {
 
     this.config = Object.assign( {}, this.defaults, config )
 
-    this.time = {
-      start: Date.now(),
-      previous: Date.now(),
-      current: Date.now(),
-      delta: 0,
-      elapsed: 0,
-    }
-
     this.ctx = null
 
     this.setupInstance()
@@ -45,7 +37,6 @@ export default class Canvas2d {
     this.config.append && this.config.appendTo.removeChild( this.config.canvas )
 
     this.config = null
-    this.time = null
     this.ctx = null
   }
 
@@ -85,16 +76,9 @@ export default class Canvas2d {
     this.ctx.scale( resolution, resolution )
   }
 
-  tick = () => {
+  tick = ( delta, elapsed ) => {
 
-    const prev = this.time.current
-
-    this.time.current = Date.now()
-    this.time.delta = this.time.current - this.time.previous
-    this.time.elapsed = this.time.current - this.time.start
-    this.time.previous = prev
-
-    this.draw( this.ctx, this.time.delta, this.time.elapsed )
+    this.draw( this.ctx, delta, elapsed )
   }
 
   // Abstract
