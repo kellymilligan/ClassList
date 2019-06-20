@@ -1,25 +1,24 @@
-import { WebGLRenderer, Scene, PerspectiveCamera, Object3D, Vector3, Mesh, SphereGeometry, MeshNormalMaterial } from 'three'
-import defaultsDeep from 'lodash.defaultsdeep'
+import { WebGLRenderer, Scene, OrthographicCamera, PerspectiveCamera, Object3D, Vector3, Mesh, SphereGeometry, MeshNormalMaterial } from 'three'
 
-import viewport from '@/utils/ViewportManager'
 import { dataUrlToBlob } from '@/utils/canvas/'
 
 export default class Three {
 
   get defaults() {
     return {
-      append: true,
-      antialias: true,
-      container: document.body,
-      width: window.innerWidth,
-      height: window.innerHeight,
-      clearColor: '#000',
-      dprLimit: 2,
-      camera: {
-        fov: 75,
-        far: 1000,
-        position: new Vector3(0, 0, 100),
-      }
+      canvas: null,                       // Optionally pass a canvas element to initialize on
+      appendTo: document.body,            // Only applicable if canvas is not defined
+      antialias: true,                    // Apply default renderer antialiasing
+      alpha: false,                       // Enable renderer alpha channel
+      clearColor: '#000',                 // Colour of clear space
+      clearAlpha: 1,                      // Opacity of clear space, only valid if alpha is enabled
+      width: window.innerWidth,           // Width of canvas
+      height: window.innerHeight,         // Height of canvas
+      dprLimit: 2,                        // Maximum devicePixelRatio value
+      orthographic: false,                // Render with an orthographic camera
+      cameraFar: 1000,                    // Camera far plane Z pos
+      cameraFov: 75,                      // Camera fov, Only applicable if orthographic is false
+      cameraPos: new Vector3( 0, 0, 100 ) // Camera position, only applicable if orthographic is false
     }
   }
 
@@ -31,12 +30,17 @@ export default class Three {
     return dataUrlToBlob( this.asDataURL )
   }
 
+  getOrthographicCamera( width, height, far ) {
+    return new OrthographicCamera( width * -0.5, width * 0.5, height * 0.5, height * -0.5, -far, far )
+  }
+
+  getPerspectiveCamera( fov, width, height, far ) {
+    return new PerspectiveCamera( fov, width / height, 1, far )
+  }
+
   constructor( config = {} ) {
 
-    console.log('Three: instance created.')
-
-    this.config = defaultsDeep( { ...config }, this.defaults )
-
+    this.config = Object.assign( {}, this.defaults, config )
     this.setupInstance()
   }
 
@@ -52,18 +56,17 @@ export default class Three {
     this.scene = null
     this.origin = null
     this.camera = null
-
-    console.log('Three: instance destroyed.')
   }
+
 
   setupInstance() {
 
-    const { append, antialias, container, width, height, clearColor, camera } = this.config
+    const { canvas, appendTo, antialias, alpha, clearColor, clearAlpha, width, height, orthographic, cameraFar, cameraFov, cameraPos } = this.config
 
     // Renderer
-    this.renderer = new WebGLRenderer( { antialias } )
+    this.renderer = new WebGLRenderer( { canvas, alpha, antialias } )
     this.renderer.setSize( width, height )
-    this.renderer.setClearColor( clearColor, 1 )
+    this.renderer.setClearColor( clearColor, clearAlpha )
 
     // Scene
     this.scene = new Scene()
@@ -71,14 +74,17 @@ export default class Three {
     this.scene.add( this.origin )
 
     // Camera
-    this.camera = new PerspectiveCamera( camera.fov, width / height, 1, camera.far )
-    this.camera.position.copy( camera.position )
+    this.camera = orthographic
+      ? this.getOrthographicCamera( width, height, cameraFar )
+      : this.getPerspectiveCamera( cameraFov, width, height, cameraFar )
 
-    append && container.appendChild( this.renderer.domElement )
+    this.camera.position.copy( cameraPos )
+
+    if ( !canvas ) appendTo.appendChild( this.renderer.domElement )
 
     this.setupScene()
 
-    this.resize()
+    this.resize( width, height, window.devicePixelRatio )
     this.tick()
   }
 
@@ -88,21 +94,22 @@ export default class Three {
     this.origin.add( new Mesh( new SphereGeometry( 25 ), new MeshNormalMaterial( { wireframe: true } ) ) )
   }
 
-  resize = () => {
+  resize = ( width = window.innerWidth, height = window.innerHeight, dpr = 1 ) => {
 
-    const { width, height, ratio, dpr } = viewport.latest
+    this.config.width = width
+    this.config.height = height
 
-    this.camera.aspect = ratio
+    this.camera.aspect = width / height
     this.camera.updateProjectionMatrix()
 
     this.renderer.setPixelRatio( Math.min( dpr, this.config.dprLimit ) )
     this.renderer.setSize( width, height )
   }
 
-  tick = () => this.render()
+  tick = ( delta, elapsed ) => this.render( delta, elapsed )
 
   // Abstract
-  render() {
+  render( delta, elapsed ) {
 
     this.origin.rotation.y += 0.001 * Math.PI
     this.renderer.render( this.scene, this.camera )
