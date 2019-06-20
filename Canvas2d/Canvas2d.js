@@ -1,13 +1,10 @@
-import viewport from '@/managers/ViewportManager'
-import dataUrlToBlob from '@/utils/canvas/dataUrlToBlob'
-
 export default class Canvas2d {
 
   get defaults() {
     return {
       canvas: null,               // Optionally pass a canvas element to initialize on
-      append: true,               // Only applicable if canvas = null
-      appendTo: document.body,    // Only applicable if canvas = null
+      append: true,               // Only applicable if canvas is not defined
+      appendTo: document.body,    // Only applicable if canvas is not defined
       autosize: true,             // Apply dimensions in CSS on reszie
       width: window.innerWidth,   // Width of canvas
       height: window.innerHeight, // Height of canvas
@@ -19,16 +16,9 @@ export default class Canvas2d {
     return this.config.canvas.toDataURL()
   }
 
-  get asBlob() {
-    return dataUrlToBlob( this.asDataURL )
-  }
-
   constructor( config = {} ) {
 
     this.config = Object.assign( {}, this.defaults, config )
-
-    this.ctx = null
-
     this.setupInstance()
   }
 
@@ -42,9 +32,9 @@ export default class Canvas2d {
 
   setupInstance() {
 
-    const { append, appendTo, width, height } = this.config
+    const { canvas, append, appendTo, width, height } = this.config
 
-    if ( !this.config.canvas ) {
+    if ( !canvas ) {
 
       this.config.canvas = document.createElement( 'canvas' )
       append && appendTo.appendChild( this.config.canvas )
@@ -56,19 +46,20 @@ export default class Canvas2d {
 
     this.ctx = this.config.canvas.getContext( '2d' )
 
-    this.resize( width, height )
+    this.resize( width, height, window.devicePixelRatio )
   }
 
-  resize = ( width, height ) => {
+  resize = ( width = window.innerWidth, height = window.innerHeight, dpr = 1 ) => {
 
-    const { autosize, dprLimit } = this.config
-    const { dpr } = viewport.latest
-    const resolution = Math.max( Math.min( dpr, dprLimit ), 1 )
+    const resolution = Math.min( dpr, this.config.dprLimit )
+
+    this.config.width = width
+    this.config.height = height
 
     this.ctx.canvas.width = width * resolution
     this.ctx.canvas.height = height * resolution
 
-    if ( autosize ) {
+    if ( this.config.autosize ) {
       this.ctx.canvas.style.width = width + 'px'
       this.ctx.canvas.style.height = height + 'px'
     }
