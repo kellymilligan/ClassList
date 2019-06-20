@@ -1,7 +1,5 @@
 import { WebGLRenderer, Scene, OrthographicCamera, PerspectiveCamera, Object3D, Vector3, Mesh, SphereGeometry, MeshNormalMaterial } from 'three'
 
-import { dataUrlToBlob } from '@/utils/canvas/'
-
 export default class Three {
 
   get defaults() {
@@ -26,10 +24,6 @@ export default class Three {
     return this.renderer.domElement.toDataURL()
   }
 
-  get asBlob() {
-    return dataUrlToBlob( this.asDataURL )
-  }
-
   getOrthographicCamera( width, height, far ) {
     return new OrthographicCamera( width * -0.5, width * 0.5, height * 0.5, height * -0.5, -far, far )
   }
@@ -39,6 +33,8 @@ export default class Three {
   }
 
   constructor( config = {} ) {
+
+    console.log( 'Three: instance created.' )
 
     this.config = Object.assign( {}, this.defaults, config )
     this.setupInstance()
@@ -52,10 +48,19 @@ export default class Three {
     this.cleanup()
 
     this.config = null
-    this.renderer = null
-    this.scene = null
+
+    this.scene.remove( this.origin )
     this.origin = null
+
+    this.scene.dispose()
+    this.scene = null
+
     this.camera = null
+
+    this.renderer.renderLists.dispose()
+    this.renderer = null
+
+    console.log( 'Three: instance destroyed.' )
   }
 
 
@@ -78,7 +83,7 @@ export default class Three {
       ? this.getOrthographicCamera( width, height, cameraFar )
       : this.getPerspectiveCamera( cameraFov, width, height, cameraFar )
 
-    this.camera.position.copy( cameraPos )
+    !orthographic && this.camera.position.copy( cameraPos )
 
     if ( !canvas ) appendTo.appendChild( this.renderer.domElement )
 
@@ -99,7 +104,18 @@ export default class Three {
     this.config.width = width
     this.config.height = height
 
-    this.camera.aspect = width / height
+    if ( this.config.orthographic ) {
+
+      this.camera.left = width * -0.5
+      this.camera.right = width * 0.5
+      this.camera.top = height * 0.5
+      this.camera.bottom = height * -0.5
+    }
+    else {
+
+      this.camera.aspect = width / height
+    }
+
     this.camera.updateProjectionMatrix()
 
     this.renderer.setPixelRatio( Math.min( dpr, this.config.dprLimit ) )
