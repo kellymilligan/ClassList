@@ -1,5 +1,7 @@
 import { WebGLRenderer, Scene, OrthographicCamera, PerspectiveCamera, Object3D, Vector3, Mesh, SphereGeometry, MeshNormalMaterial } from 'three'
 
+import { dataUrlToBlob } from '@/utils/canvas/'
+
 export default class Three {
 
   get defaults() {
@@ -24,6 +26,10 @@ export default class Three {
     return this.renderer.domElement.toDataURL()
   }
 
+  get asBlob() {
+    return dataUrlToBlob( this.asDataURL )
+  }
+
   getOrthographicCamera( width, height, far ) {
     return new OrthographicCamera( width * -0.5, width * 0.5, height * 0.5, height * -0.5, -far, far )
   }
@@ -33,8 +39,6 @@ export default class Three {
   }
 
   constructor( config = {} ) {
-
-    console.log( 'Three: instance created.' )
 
     this.config = Object.assign( {}, this.defaults, config )
     this.setupInstance()
@@ -59,8 +63,6 @@ export default class Three {
 
     this.renderer.renderLists.dispose()
     this.renderer = null
-
-    console.log( 'Three: instance destroyed.' )
   }
 
 
