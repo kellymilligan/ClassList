@@ -1,3 +1,5 @@
+import dataUrlToBlob from '@/utils/canvas/dataUrlToBlob'
+
 export default class Canvas2d {
 
   get defaults() {
@@ -14,6 +16,10 @@ export default class Canvas2d {
 
   get asDataURL() {
     return this.config.canvas.toDataURL()
+  }
+
+  get asBlob() {
+    return dataUrlToBlob( this.asDataURL )
   }
 
   constructor( config = {} ) {
