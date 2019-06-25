@@ -19,6 +19,8 @@ const fragDefault = `
   }
 `
 
+const RENDER_SINGLE_TRIANGLE = true
+
 function createShader( gl, type, source ) {
 
   const shader = gl.createShader( type )
@@ -118,11 +120,20 @@ export default class Shader2d {
 
     gl.bindBuffer( gl.ARRAY_BUFFER, this.positionBuffer )
 
-    const positions = [
-      -1.0, -1.0,
-      -1.0, 3.0,
-      3.0, -1.0,
-    ]
+    const positions = RENDER_SINGLE_TRIANGLE
+      ? [
+        -1.0, -1.0,
+        -1.0, 3.0,
+        3.0, -1.0,
+      ]
+      : [
+        -1.0, -1.0,
+        -1.0, 1.0,
+        1.0, -1.0,
+        1.0, 1.0,
+        -1.0, 1.0,
+        1.0, -1.0,
+      ]
 
     gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( positions ), gl.STATIC_DRAW )
 
@@ -130,7 +141,16 @@ export default class Shader2d {
     this.render()
   }
 
-  resize( width = window.innerWidth, height = window.innerHeight ) {
+  destroy() {
+
+    this.positionAttributeLocation = null
+    this.positionBuffer = null
+    this.uniforms = null
+    this.program = null
+    this.gl = null
+  }
+
+  resize( width = window.innerWidth, height = window.innerHeight, dpr = 1 ) {
 
     this.gl.canvas.width = width
     this.gl.canvas.height = height
@@ -147,12 +167,14 @@ export default class Shader2d {
     } )
   }
 
-  render( time ) {
+  tick = ( delta, elapsed ) => this.render( delta, elapsed )
+
+  render( delta, elapsed ) {
 
     const { gl } = this
 
     // Update time uniform
-    this.updateUniforms( { u_time: time } )
+    this.updateUniforms( { u_time: elapsed } )
 
     // Clear the canvas
     gl.clearColor( 0, 0, 0, 0 )
@@ -175,7 +197,7 @@ export default class Shader2d {
     // Draw
     const primitiveType = gl.TRIANGLES
     const pointOffset = 0
-    const pointCount = 3
+    const pointCount = RENDER_SINGLE_TRIANGLE ? 3 : 6
     gl.drawArrays( primitiveType, pointOffset, pointCount )
 
   }
