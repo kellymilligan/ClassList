@@ -2,7 +2,7 @@
   Establish the InputManager as a global singleton.
 
   The main instance can be imported as a standard module:
-  import InputManager from 'path/to/InputManager'
+  import input from 'path/to/InputManager'
 
   Access to the underlying class is still available if needed:
   import { InputManager } from 'path/to/InputManager'
