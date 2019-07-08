@@ -30,6 +30,7 @@ class ViewportManager {
 
   get defaults() {
     return {
+      isBound: false,
       width: 1920,
       height: 1080,
       ratio: 16 / 9,
@@ -53,7 +54,6 @@ class ViewportManager {
     this.state = { ...this.defaults }
     this.stack = []
 
-    this.isBound = false
     autobind && this.bind()
 
     this.refresh()
@@ -65,18 +65,18 @@ class ViewportManager {
 
   bind() {
 
-    if ( this.isBound ) {
+    if ( this.state.isBound ) {
       console.error( 'ViewportManager.js: instance was already bound!' )
       return
     }
 
-    this.isBound = true
+    this.state.isBound = true
     this._addEvents()
   }
 
   unbind() {
 
-    this.isBound = false
+    this.state.isBound = false
     this._removeEvents()
   }
 
