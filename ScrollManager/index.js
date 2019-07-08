@@ -2,10 +2,10 @@
   Establish the ScrollManager as a global singleton.
 
   The main instance can be imported as a standard module:
-  import ScrollManager from 'utils/ScrollManager'
+  import ScrollManager from 'path/to/ScrollManager'
 
   Access to the underlying class is still available if needed:
-  import { ScrollManager } from 'utils/ScrollManager'
+  import { ScrollManager } from 'path/to/ScrollManager'
 */
 
 import ScrollManager from './ScrollManager'
