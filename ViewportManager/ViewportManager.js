@@ -55,8 +55,6 @@ class ViewportManager {
     this.stack = []
 
     autobind && this.bind()
-
-    this.refresh()
   }
 
 
@@ -72,6 +70,8 @@ class ViewportManager {
 
     this.state.isBound = true
     this._addEvents()
+
+    this.refresh()
   }
 
   unbind() {
