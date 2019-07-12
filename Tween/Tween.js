@@ -60,25 +60,16 @@ export default class {
       return
     }
 
-    // Check for completeness
-    if ( this.progress >= 1 ) {
-
-      this.progress = 1
-      this.value = 1
-
-      this._onTick( this.value, this.progress )
-      this._complete()
-
-      return
-    }
-
     // Continue with next tick
     this.currentTime = Date.now()
 
-    this.progress = ( this.currentTime - this.startTime ) / this.duration
+    this.progress = Math.min( ( this.currentTime - this.startTime ) / this.duration, 1 )
     this.value = EasingFunctions[ this.easing ]( this.progress )
 
-    this._onTick( Math.min( this.value, 1 ), Math.min( this.progress, 1 ) )
+    this._onTick( this.value, this.progress )
+
+    // Check for completeness
+    if ( this.progress >= 1 ) { this._complete() }
 
     this.animationFrame = requestAnimationFrame( () => this._tick() )
   }
