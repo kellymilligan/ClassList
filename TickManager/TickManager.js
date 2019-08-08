@@ -57,14 +57,14 @@ class TickManager {
 
     this.state.isRunning = true
 
-    this._addEvents()
+    this._attachEvents()
   }
 
   stop() {
 
     this.state.isRunning = false
 
-    this._removeEvents()
+    this._detachEvents()
   }
 
   register( handler, ID ) {
@@ -89,12 +89,12 @@ class TickManager {
   // Private
   // -------
 
-  _addEvents() {
+  _attachEvents() {
 
     this.raf = window.requestAnimationFrame( this._onTick )
   }
 
-  _removeEvents() {
+  _detachEvents() {
 
     window.cancelAnimationFrame( this.raf )
   }

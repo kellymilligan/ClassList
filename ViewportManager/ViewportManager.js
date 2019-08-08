@@ -69,7 +69,7 @@ class ViewportManager {
     }
 
     this.state.isBound = true
-    this._addEvents()
+    this._attachEvents()
 
     this.refresh()
   }
@@ -77,7 +77,7 @@ class ViewportManager {
   unbind() {
 
     this.state.isBound = false
-    this._removeEvents()
+    this._detachEvents()
   }
 
   refresh = () => {
@@ -115,13 +115,13 @@ class ViewportManager {
   // Private
   // --------
 
-  _addEvents() {
+  _attachEvents() {
 
     window.addEventListener( 'resize', this._onResize )
     window.addEventListener( 'scroll', this._onScroll )
   }
 
-  _removeEvents() {
+  _detachEvents() {
 
     window.removeEventListener( 'resize', this._onResize )
     window.removeEventListener( 'scroll', this._onScroll )

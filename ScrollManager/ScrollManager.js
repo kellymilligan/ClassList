@@ -52,13 +52,13 @@ class ScrollManager {
     if ( this.isBound ) { console.error('ScrollManager.js: instance was already bound!'); return }
 
     this.isBound = true
-    this.addEvents()
+    this.attachEvents()
   }
 
   unbind() {
 
     this.isBound = false
-    this.removeEvents()
+    this.detachEvents()
   }
 
   // Dependant update
@@ -77,7 +77,7 @@ class ScrollManager {
   // Bindings
   // --------
 
-  addEvents() {
+  attachEvents() {
 
     window.addEventListener( 'resize', this.onResize )
     window.addEventListener( 'scroll', this.onScroll )
@@ -85,7 +85,7 @@ class ScrollManager {
     if ( 'onmousewheel' in document ) window.addEventListener( 'mousewheel', this.onMouseWheel )
   }
 
-  removeEvents() {
+  detachEvents() {
 
     window.removeEventListener( 'resize', this.onResize )
     window.removeEventListener( 'scroll', this.onScroll )
