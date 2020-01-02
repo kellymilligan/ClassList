@@ -36,7 +36,7 @@ export type ResizeHandler = (
 ) => void
 
 export type ScrollHandler = (
-  data: { scroll: number; scrollTop: number; scrollHeight: number },
+  data: { scroll: number; scrollTop: number; scrollLeft: number; scrollHeight: number },
   extended?: any
 ) => void
 
@@ -48,6 +48,7 @@ interface State {
   dpr: number
   scrollElement: HTMLElement | null
   scrollTop: number
+  scrollLeft: number
   scrollHeight: number
   scroll: number
 }
@@ -68,6 +69,7 @@ class ViewportManager {
     dpr: 1,
     scrollElement: null,
     scrollTop: 0,
+    scrollLeft: 0,
     scrollHeight: 0,
     scroll: 0,
   }
@@ -202,12 +204,14 @@ class ViewportManager {
       ? this._state.scrollElement.scrollTop
       : window.pageYOffset
 
-    const { scrollTop, scrollHeight, height } = this._state
+    this._state.scrollLeft = this._state.scrollElement
+      ? this._state.scrollElement.scrollLeft
+      : window.pageXOffset
 
     this._state.scroll =
-      scrollTop === 0 || scrollHeight <= height
+      this._state.scrollTop === 0 || this._state.scrollHeight <= this._state.height
         ? 0
-        : Math.min(1, Math.max(0, scrollTop / (scrollHeight - height)))
+        : Math.min(1, Math.max(0, this._state.scrollTop / (this._state.scrollHeight - this._state.height)))
   }
 
   private _onScroll = () => {
@@ -216,7 +220,7 @@ class ViewportManager {
   }
 
   private _propagate(type: Type) {
-    const { width, height, dpr, scroll, scrollTop, scrollHeight } = this._state
+    const { width, height, dpr, scroll, scrollTop, scrollLeft, scrollHeight } = this._state
     const keys = Object.keys(this._stack)
 
     for (let i = 0, len = keys.length; i < len; i++) {
@@ -235,6 +239,7 @@ class ViewportManager {
           (this._stack[keys[i]].handler as ScrollHandler)({
             scroll,
             scrollTop,
+            scrollLeft,
             scrollHeight,
           })
         }
