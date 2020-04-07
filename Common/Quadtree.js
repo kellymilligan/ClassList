@@ -54,6 +54,10 @@ const Quadtree = ( bounds, capacity = 10 ) => ({
 
     return matched
   },
+  getAllPoints() {
+
+    return this.query( this.bounds, [] )
+  },
   getRandomPoint() {
 
     const points = this.query( this.bounds, [] )
