@@ -9,8 +9,9 @@
 
 import ticker from '@/managers/TickManager'
 import { sign } from '@/utils/math'
+import { firefox } from '@/utils/detect'
 
-const WHEEL_SENSITIVITY = 100
+const WHEEL_SENSITIVITY = 70
 
 export default class InputManager {
 
@@ -58,12 +59,12 @@ export default class InputManager {
 
       // Scroll wheel parameters, updated each `wheel` event
       wheel: {
-        rawDeltaX: 0,
-        rawDeltaY: 0,
+        deltaX: 0,
+        deltaY: 0,
         directionX: 0,
         directionY: 0,
-        deltaX: 0,
-        deltaY: 0
+        normalizedDeltaX: 0,
+        normalizedDeltaY: 0
       }
 
     }
@@ -105,6 +106,9 @@ export default class InputManager {
         left: 0,
         top: 0,
       },
+      platform: {
+        firefox: firefox()
+      }
     }
   }
 
@@ -143,8 +147,6 @@ export default class InputManager {
   refresh( width, height, left, top ) {
 
     const elementBounds = this.element.getBoundingClientRect()
-
-    console.log( elementBounds )
 
     this.env.width = width !== undefined ? width : elementBounds.width
     this.env.height = height !== undefined ? height : elementBounds.height
@@ -305,14 +307,15 @@ export default class InputManager {
 
   onWheel = e => {
 
-    const rawDeltaX = e.wheelDeltaX || e.deltaX * -1
-    const rawDeltaY = e.wheelDeltaY || e.deltaY * -1
-    const directionX = sign( rawDeltaX )
-    const directionY = sign( rawDeltaY )
-    const deltaX = directionX * WHEEL_SENSITIVITY
-    const deltaY = directionY * WHEEL_SENSITIVITY
+    const deltaMultiplier = this.env.platform.firefox ? 40 : 1
+    const deltaX = ( e.wheelDeltaX || e.deltaX * -1 ) * deltaMultiplier
+    const deltaY = ( e.wheelDeltaY || e.deltaY * -1 ) * deltaMultiplier
+    const directionX = sign( deltaX )
+    const directionY = sign( deltaY )
+    const normalizedDeltaX = directionX * WHEEL_SENSITIVITY
+    const normalizedDeltaY = directionY * WHEEL_SENSITIVITY
 
-    this.tracking.data.wheel = { rawDeltaX, rawDeltaY, directionX, directionY, deltaX, deltaY }
+    this.tracking.data.wheel = { deltaX, deltaY, directionX, directionY, normalizedDeltaX, normalizedDeltaY }
 
     // Reset after one animation frame, allowing aniamtion loops to listen to wheel updates
     window.requestAnimationFrame( () => {
