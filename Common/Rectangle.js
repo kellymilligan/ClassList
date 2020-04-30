@@ -29,7 +29,7 @@ const Rectangle = ( x = 0, y = 0, width = 1, height = 1 ) => ({
 
       const centerDistance = Vector(
         Math.abs( ( this.x + this.width / 2 ) - x ),
-        Math.abs( ( this.y + this.height / 2 ) - y ),
+        Math.abs( ( this.y + this.height / 2 ) - y )
       )
 
       if ( centerDistance.x > this.width / 2 + radius ) { return false }
