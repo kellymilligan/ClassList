@@ -57,6 +57,21 @@ Octree object for working with 3D spatial point querying
 
 ---
 
+## Hooks
+
+Custom React hooks for common uses
+
+### useRaf 
+wraps requestAnimationFrame registration
+
+### useResize
+wraps window resize event registration
+
+### usePointer
+wraps mouse/touch position even registration
+
+---
+
 ## Other
 
 ### Tween
