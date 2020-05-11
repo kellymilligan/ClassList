@@ -89,8 +89,8 @@ export default class InputManager {
     this.element = element
 
     this.tracking = {
-      active: false,
-      touch: false,
+      isActive: false,
+      isTouch: false,
       data: { ...this.defaults },
     }
 
@@ -121,9 +121,9 @@ export default class InputManager {
   */
   start( startingX = 0, startingY = 0 ) {
 
-    if ( this.tracking.active ) { console.warn('InputManager: start() was called while already active...'); return this.tracking }
+    if ( this.tracking.isActive ) { console.warn('InputManager: start() was called while already active...'); return this.tracking }
 
-    this.tracking.active = true
+    this.tracking.isActive = true
 
     this.refresh()
     this.setPointer( startingX, startingY )
@@ -136,7 +136,7 @@ export default class InputManager {
 
   stop() {
 
-    this.tracking.active = false
+    this.tracking.isActive = false
     this.tracking.data = { ...this.defaults }
     this.detachEvents()
   }
@@ -282,7 +282,7 @@ export default class InputManager {
   // Relay to pointer handler
   onTouchStart = ( e ) => {
 
-    this.tracking.touch = true
+    this.tracking.isTouch = true
 
     e.clientX = e.touches[ 0 ].clientX
     e.clientY = e.touches[ 0 ].clientY
