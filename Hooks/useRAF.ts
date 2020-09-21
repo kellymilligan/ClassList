@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { isServerSide } from '~/src/util';
 
 export type TimeData = {
   delta: number;
@@ -17,7 +16,7 @@ export type TimeData = {
 export function useRAF(active: boolean, handler: Function, deps = []) {
   useEffect(() => {
     // Don't register for node environments (e.g. Server-Side Rendering)
-    if (isServerSide) {
+    if (typeof window === 'undefined') {
       return;
     }
 

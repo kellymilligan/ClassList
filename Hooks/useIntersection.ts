@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { isServerSide } from '~/src/util';
 
 type IntersectionObserverOptions = {
   root?: HTMLElement | null;
@@ -28,7 +27,7 @@ export function useIntersection(handler: Function, options = {}, deps = []) {
 
   useEffect(() => {
     // Don't register for node environments (e.g. Server-Side Rendering)
-    if (isServerSide) {
+    if (typeof window === 'undefined') {
       return;
     }
 

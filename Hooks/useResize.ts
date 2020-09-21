@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { isServerSide } from '~/src/util';
 
 /**
  * A custom hook which wraps window resize event registration.
@@ -11,7 +10,7 @@ import { isServerSide } from '~/src/util';
 export function useResize(handler: Function, deps = []) {
   useEffect(() => {
     // Don't register for node environments (e.g. Server-Side Rendering)
-    if (isServerSide) {
+    if (typeof window === 'undefined') {
       return;
     }
 
