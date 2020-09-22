@@ -9,11 +9,15 @@ export type TimeData = {
  * A custom hook which wraps requestAnimationFrame registration.
  * This improves ergonomics and ensures cleanup is always handled appropriately.
  *
- * @param active  Determines if loop should currently be running. For performance sake this should only be true when necessary (e.g. while intersecting viewport).
- * @param handler Called on every tick, passed an object argument containing delta and elapsed time.
- * @param deps    List of dependencies used within the handler.
+ * @param isActive  Determines if loop should currently be running. For performance sake this should only be true when necessary (e.g. while intersecting viewport).
+ * @param handler   Called on every tick, passed an object argument containing delta and elapsed time.
+ * @param deps      List of dependencies used within the handler.
  */
-export function useRAF(active: boolean, handler: Function, deps = []) {
+export function useRAF(
+  isActive: boolean,
+  handler: (data: TimeData) => void,
+  deps = [],
+) {
   useEffect(() => {
     // Don't register for node environments (e.g. Server-Side Rendering)
     if (typeof window === 'undefined') {
@@ -26,22 +30,22 @@ export function useRAF(active: boolean, handler: Function, deps = []) {
       elapsed: performance.now(),
     };
 
-    const onTick = () => {
+    const handleTick = () => {
       const elapsed = performance.now();
       const delta = elapsed - time.elapsed;
       time = { delta, elapsed };
 
-      handler(<TimeData>{ delta, elapsed });
+      handler(time);
       // @TODO - KM - This can be significantly optimized by subscribing all handlers to
       //              a centralized ticker. This currently causes all handlers to be
       //              encapsulated in a series of rAF callbacks.
-      raf = window.requestAnimationFrame(onTick);
+      raf = window.requestAnimationFrame(handleTick);
     };
 
-    if (active) onTick();
+    if (isActive) handleTick();
 
     return () => {
       window.cancelAnimationFrame(raf);
     };
-  }, [active, handler, ...deps]);
+  }, [isActive, handler, ...deps]);
 }

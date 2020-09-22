@@ -34,25 +34,26 @@ export const PointerDefaults: PointerData = {
  * A custom hook which wraps mouse/touch position event registration
  * This improves ergonomics and ensures cleanup is always handled appropriately.
  *
- * @param active          Determines if pointer position should currently be tracked. For performance sake this should only be true when necessary (e.g. while intersecting viewport)
+ * A handler can be passed to the hook and is invoked whenever pointer events fire.
+ *
+ * Also returns the reference to the pointer data. The reference can be used to
+ * simply fetch the (non-reactive) pointer data without specifying a handler:
+ * `const pointer = usePointer(isActive); // Useful in a useRAF() loop`
+ *
+ * @param isActive        Determines if pointer position should currently be tracked. For performance sake this should only be true when necessary (e.g. while intersecting viewport)
  * @param handler         Invoked on mouse/touch events, current PointerData is passed as an argument.
  * @param releaseHandler  Called when a drag gesture is released, delta vector passed as an argument.
  * @param deps            List of dependencies used within the handler.
  */
 export function usePointer(
-  active: boolean,
-  handler: (data: PointerData) => void,
+  isActive: boolean,
+  handler?: (data: PointerData) => void,
   releaseHandler?: (data: TravelVector) => void,
   deps = [],
 ) {
-  const viewportDimensions = useRef({
-    viewportWidth: 0,
-    viewportHeight: 0,
-  });
-
   const pointerState = useRef({
     ...PointerDefaults,
-  });
+  } as PointerData);
 
   const deltaState = useRef({
     prevClientX: 0,
@@ -61,15 +62,7 @@ export function usePointer(
     originClientY: 0,
   });
 
-  useResize(
-    ({ viewportWidth, viewportHeight }) => {
-      viewportDimensions.current = {
-        viewportWidth,
-        viewportHeight,
-      };
-    },
-    [active],
-  );
+  const viewportDimensions = useResize();
 
   useEffect(() => {
     // Don't register for node environments (e.g. Server-Side Rendering)
@@ -77,7 +70,7 @@ export function usePointer(
       return;
     }
 
-    const propagate = (clientX, clientY) => {
+    const propagate = (clientX: number, clientY: number) => {
       const { viewportWidth, viewportHeight } = viewportDimensions.current;
 
       pointerState.current.clientX = clientX;
@@ -89,10 +82,18 @@ export function usePointer(
       pointerState.current.deltaX = clientX - deltaState.current.prevClientX;
       pointerState.current.deltaY = clientY - deltaState.current.prevClientY;
 
+      // Reset the delta values each frame so that they can be used in rAF loops
+      window.requestAnimationFrame(() => {
+        pointerState.current.deltaX = 0;
+        pointerState.current.deltaY = 0;
+      });
+
       pointerState.current.travelX = clientX - deltaState.current.originClientX;
       pointerState.current.travelY = clientY - deltaState.current.originClientY;
 
-      handler(pointerState.current as PointerData);
+      if (handler) {
+        handler(pointerState.current as PointerData);
+      }
 
       deltaState.current.prevClientX = clientX;
       deltaState.current.prevClientY = clientY;
@@ -112,8 +113,6 @@ export function usePointer(
 
     const up = (clientX: number, clientY: number) => {
       pointerState.current.isDown = false;
-      deltaState.current.originClientX = 0;
-      deltaState.current.originClientY = 0;
 
       if (releaseHandler) {
         releaseHandler({
@@ -123,33 +122,36 @@ export function usePointer(
       }
 
       propagate(clientX, clientY);
+
+      deltaState.current.originClientX = 0;
+      deltaState.current.originClientY = 0;
     };
 
-    const onMouseDown = (e: MouseEvent) => {
+    const handleMouseDown = (e: MouseEvent) => {
       down(e.clientX, e.clientY);
     };
 
-    const onMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent) => {
       move(e.clientX, e.clientY);
     };
 
-    const onMouseUp = (e: MouseEvent) => {
+    const handleMouseUp = (e: MouseEvent) => {
       up(e.clientX, e.clientY);
     };
 
-    const onTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = (e: TouchEvent) => {
       down(e.touches[0].clientX, e.touches[0].clientY);
     };
 
-    const onTouchMove = (e: TouchEvent) => {
+    const handleTouchMove = (e: TouchEvent) => {
       move(e.touches[0].clientX, e.touches[0].clientY);
     };
 
-    const onTouchEnd = (e: TouchEvent) => {
+    const handleTouchEnd = (e: TouchEvent) => {
       up(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
     };
 
-    // const onMouseLeave = () => {
+    // const handleMouseLeave = () => {
     //   // When cursor leaves viewport, reset position to center of viewport
     //   up(
     //     viewportDimensions.current.viewportWidth / 2,
@@ -157,24 +159,31 @@ export function usePointer(
     //   );
     // };
 
-    if (active) {
-      document.addEventListener('mousedown', onMouseDown, false);
-      document.addEventListener('mousemove', onMouseMove, false);
-      document.addEventListener('mouseup', onMouseUp, false);
-      document.addEventListener('touchstart', onTouchStart, false);
-      document.addEventListener('touchmove', onTouchMove, false);
-      document.addEventListener('touchend', onTouchEnd, false);
-      // document.addEventListener('mouseleave', onMouseLeave, false);
+    // Cleanup "down" state on deactivation
+    if (!isActive && pointerState.current.isDown) {
+      up(pointerState.current.clientX, pointerState.current.clientY);
+    }
+
+    if (isActive) {
+      document.addEventListener('mousedown', handleMouseDown, false);
+      document.addEventListener('mousemove', handleMouseMove, false);
+      document.addEventListener('mouseup', handleMouseUp, false);
+      document.addEventListener('touchstart', handleTouchStart, false);
+      document.addEventListener('touchmove', handleTouchMove, false);
+      document.addEventListener('touchend', handleTouchEnd, false);
+      // document.addEventListener('mouseleave', handleMouseLeave, false);
     }
 
     return () => {
-      document.removeEventListener('mousedown', onMouseDown, false);
-      document.removeEventListener('mousemove', onMouseMove, false);
-      document.removeEventListener('mouseup', onMouseUp, false);
-      document.removeEventListener('touchstart', onTouchStart, false);
-      document.removeEventListener('touchmove', onTouchMove, false);
-      document.removeEventListener('touchend', onTouchEnd, false);
-      // document.removeEventListener('mouseleave', onMouseLeave, false);
+      document.removeEventListener('mousedown', handleMouseDown, false);
+      document.removeEventListener('mousemove', handleMouseMove, false);
+      document.removeEventListener('mouseup', handleMouseUp, false);
+      document.removeEventListener('touchstart', handleTouchStart, false);
+      document.removeEventListener('touchmove', handleTouchMove, false);
+      document.removeEventListener('touchend', handleTouchEnd, false);
+      // document.removeEventListener('mouseleave', handleMouseLeave, false);
     };
-  }, [active, handler, ...deps]);
+  }, [isActive, handler, ...deps]);
+
+  return pointerState;
 }
