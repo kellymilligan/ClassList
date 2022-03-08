@@ -1,4 +1,4 @@
-const usePointer = (element = document.body) => {
+export const usePointer = (element = document.body) => {
   const data = {
     isDown: false,
     isMoving: false,
@@ -48,8 +48,6 @@ const usePointer = (element = document.body) => {
     },
   };
 
-  let tickId;
-
   const measure = () => {
     const { width, height, left, top } = element.getBoundingClientRect();
 
@@ -93,10 +91,8 @@ const usePointer = (element = document.body) => {
     data.isMoving = data.isDown && data.speed.distance > 0;
   };
 
-  const handleTick = () => {
+  const update = () => {
     updateSpeed();
-
-    tickId = window.requestAnimationFrame(handleTick);
   };
 
   const handlePointerDown = (e) => {
@@ -162,8 +158,6 @@ const usePointer = (element = document.body) => {
     element.addEventListener("touchstart", handleTouchStart, false);
     document.addEventListener("touchmove", handleTouchMove, false);
     document.addEventListener("touchend", handleTouchEnd, false);
-
-    tickId = window.requestAnimationFrame(handleTick);
   };
 
   const detachEvents = () => {
@@ -173,24 +167,26 @@ const usePointer = (element = document.body) => {
     element.removeEventListener("touchstart", handleTouchStart, false);
     document.removeEventListener("touchmove", handleTouchMove, false);
     document.removeEventListener("touchend", handleTouchEnd, false);
-
-    window.cancelAnimationFrame(tickId);
   };
 
   const destroy = () => {
     detachEvents();
   };
 
-  // Bind
-  measure();
-  attachEvents();
+  // Bind if in a browser environment
+  if (typeof window !== "undefined") {
+    measure();
+    attachEvents();
+  }
 
   return {
     data,
     pointer: data,
+    update,
+    updatePointer: update,
     destroy,
     destroyPointer: destroy,
   };
 };
 
-module.exports = usePointer;
+export default usePointer;
