@@ -33,6 +33,7 @@ const Ticker = () => {
     time: {
       elapsed: 0,
       delta: 0,
+      factor: 0,
       prev: 0,
       stamp: Date.now(),
     },
@@ -40,7 +41,7 @@ const Ticker = () => {
   const stack = [];
   let raf = null;
 
-  // const stats = new Stats();
+  // const stats = env.dev && env.browser ? new Stats() : null;
 
   const _updateTime = () => {
     const now = performance.now();
@@ -49,16 +50,17 @@ const Ticker = () => {
     state.time.delta = now - state.time.prev;
     state.time.prev = now;
     state.time.stamp = Date.now();
+    state.time.factor = state.time.delta / (1000 / 60);
   };
 
   const _propagate = () => {
     // if (stats) stats.begin();
 
-    const { delta, elapsed, stamp } = state.time;
+    const { delta, factor, elapsed, stamp } = state.time;
     const keys = Object.keys(stack);
 
     for (let i = 0, len = keys.length; i < len; i++) {
-      stack[keys[i]]({ delta, elapsed, stamp });
+      stack[keys[i]]({ delta, factor, elapsed, stamp });
     }
     // if (stats) stats.end();
   };
