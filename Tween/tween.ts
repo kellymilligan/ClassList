@@ -30,22 +30,6 @@ export const Tween = (
 
 	let delayTimer = 0;
 
-	const tick = () => {
-		if (!isRunning) return;
-
-		currentTime = performance.now();
-
-		progress = Math.min((currentTime - startTime) / duration, 1);
-		value = ease(progress);
-
-		tickHandler?.(value, progress);
-
-		// Check for completeness
-		if (progress >= 1) {
-			completeHandler?.();
-		}
-	};
-
 	const start = (delay = 0) => {
 		clearTimeout(delayTimer);
 		delayTimer = setTimeout(() => {
@@ -58,6 +42,23 @@ export const Tween = (
 	const stop = () => {
 		clearTimeout(delayTimer);
 		isRunning = false;
+	};
+
+	const tick = () => {
+		if (!isRunning) return;
+
+		currentTime = performance.now();
+
+		progress = Math.min((currentTime - startTime) / duration, 1);
+		value = ease(progress);
+
+		tickHandler?.(value, progress);
+
+		// Check for completeness
+		if (progress >= 1) {
+			stop();
+			completeHandler?.();
+		}
 	};
 
 	return {
