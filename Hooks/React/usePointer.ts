@@ -1,19 +1,20 @@
-import { useEffect, useRef } from 'react';
-import { useResize } from './useResize';
+import { useEffect, useRef } from "react";
+
+import { useResize } from "./useResize";
 
 export type PointerData = {
   isDown: boolean;
   clientX: number;
   clientY: number;
-  normalX: number;
-  normalY: number;
+  normalizedX: number;
+  normalizedY: number;
   deltaX: number;
   deltaY: number;
   travelX: number;
   travelY: number;
 };
 
-export type TravelVector = {
+export type PointerTravelVector = {
   x: number;
   y: number;
 };
@@ -22,8 +23,8 @@ export const PointerDefaults: PointerData = {
   isDown: false,
   clientX: 0,
   clientY: 0,
-  normalX: 0,
-  normalY: 0,
+  normalizedX: 0,
+  normalizedY: 0,
   deltaX: 0,
   deltaY: 0,
   travelX: 0,
@@ -41,16 +42,22 @@ export const PointerDefaults: PointerData = {
  * `const pointer = usePointer(isActive); // Useful in a useRAF() loop`
  *
  * @param isActive        Determines if pointer position should currently be tracked. For performance sake this should only be true when necessary (e.g. while intersecting viewport)
- * @param handler         Invoked on mouse/touch events, current PointerData is passed as an argument.
- * @param releaseHandler  Called when a drag gesture is released, delta vector passed as an argument.
+ * @param moveHandler     Invoked when the pointer moves (fires regularly!), current PointerData is passed as an argument.
+ * @param downHandler     Invoked when a gesture is initiated, current PointerData is passed as an argument.
+ * @param dragHandler     Invoked when a gesture is moved/dragged, current PointerData and a travel vector is passed as an argument.
+ * @param releaseHandler  Invoked when a gesture is released, a travel vector is passed as an argument and can be used to determine "clicks" from drag gestures.
  * @param deps            List of dependencies used within the handler.
  */
 export function usePointer(
   isActive: boolean,
-  handler?: (data: PointerData) => void,
-  releaseHandler?: (data: TravelVector) => void,
+  moveHandler?: (data: PointerData) => void,
+  downHandler?: (data: PointerData) => void,
+  dragHandler?: (data: PointerData, travel: PointerTravelVector) => void,
+  releaseHandler?: (travel: PointerTravelVector) => void,
   deps = [],
 ) {
+  const isBrowser = typeof window === "undefined";
+
   const pointerState = useRef({
     ...PointerDefaults,
   } as PointerData);
@@ -66,7 +73,7 @@ export function usePointer(
 
   useEffect(() => {
     // Don't register for node environments (e.g. Server-Side Rendering)
-    if (typeof window === 'undefined') {
+    if (isBrowser) {
       return;
     }
 
@@ -76,23 +83,26 @@ export function usePointer(
       pointerState.current.clientX = clientX;
       pointerState.current.clientY = clientY;
 
-      pointerState.current.normalX = clientX / viewportWidth;
-      pointerState.current.normalY = clientY / viewportHeight;
+      pointerState.current.normalizedX = clientX / viewportWidth;
+      pointerState.current.normalizedY = clientY / viewportHeight;
 
       pointerState.current.deltaX = clientX - deltaState.current.prevClientX;
       pointerState.current.deltaY = clientY - deltaState.current.prevClientY;
 
-      // Reset the delta values each frame so that they can be used in rAF loops
-      window.requestAnimationFrame(() => {
-        pointerState.current.deltaX = 0;
-        pointerState.current.deltaY = 0;
-      });
+      // Reset the delta values upon each frame so that they can be used within
+      // requestAnimationFrame loops to approximate real-time pointer velocity
+      if (isBrowser) {
+        window.requestAnimationFrame(() => {
+          pointerState.current.deltaX = 0;
+          pointerState.current.deltaY = 0;
+        });
+      }
 
       pointerState.current.travelX = clientX - deltaState.current.originClientX;
       pointerState.current.travelY = clientY - deltaState.current.originClientY;
 
-      if (handler) {
-        handler(pointerState.current as PointerData);
+      if (moveHandler) {
+        moveHandler(pointerState.current as PointerData);
       }
 
       deltaState.current.prevClientX = clientX;
@@ -104,11 +114,25 @@ export function usePointer(
       deltaState.current.originClientX = clientX;
       deltaState.current.originClientY = clientY;
 
+      if (downHandler) {
+        downHandler(pointerState.current as PointerData);
+      }
+
       propagate(clientX, clientY);
     };
 
     const move = (clientX: number, clientY: number) => {
       propagate(clientX, clientY);
+
+      if (dragHandler && pointerState.current.isDown) {
+        dragHandler(
+          pointerState.current as PointerData,
+          {
+            x: pointerState.current.travelX,
+            y: pointerState.current.travelY,
+          } as PointerTravelVector,
+        );
+      }
     };
 
     const up = (clientX: number, clientY: number) => {
@@ -118,7 +142,7 @@ export function usePointer(
         releaseHandler({
           x: pointerState.current.travelX,
           y: pointerState.current.travelY,
-        } as TravelVector);
+        } as PointerTravelVector);
       }
 
       propagate(clientX, clientY);
@@ -165,25 +189,40 @@ export function usePointer(
     }
 
     if (isActive) {
-      document.addEventListener('mousedown', handleMouseDown, false);
-      document.addEventListener('mousemove', handleMouseMove, false);
-      document.addEventListener('mouseup', handleMouseUp, false);
-      document.addEventListener('touchstart', handleTouchStart, false);
-      document.addEventListener('touchmove', handleTouchMove, false);
-      document.addEventListener('touchend', handleTouchEnd, false);
+      document.addEventListener("mousedown", handleMouseDown, false);
+      document.addEventListener("mousemove", handleMouseMove, false);
+      document.addEventListener("mouseup", handleMouseUp, false);
+      document.addEventListener("touchstart", handleTouchStart, false);
+      document.addEventListener("touchmove", handleTouchMove, false);
+      document.addEventListener("touchend", handleTouchEnd, false);
       // document.addEventListener('mouseleave', handleMouseLeave, false);
     }
 
+    console.log("BLAH");
+
     return () => {
-      document.removeEventListener('mousedown', handleMouseDown, false);
-      document.removeEventListener('mousemove', handleMouseMove, false);
-      document.removeEventListener('mouseup', handleMouseUp, false);
-      document.removeEventListener('touchstart', handleTouchStart, false);
-      document.removeEventListener('touchmove', handleTouchMove, false);
-      document.removeEventListener('touchend', handleTouchEnd, false);
+      // Cleanup "down" state on detach
+      if (pointerState.current.isDown) {
+        up(pointerState.current.clientX, pointerState.current.clientY);
+      }
+      document.removeEventListener("mousedown", handleMouseDown, false);
+      document.removeEventListener("mousemove", handleMouseMove, false);
+      document.removeEventListener("mouseup", handleMouseUp, false);
+      document.removeEventListener("touchstart", handleTouchStart, false);
+      document.removeEventListener("touchmove", handleTouchMove, false);
+      document.removeEventListener("touchend", handleTouchEnd, false);
       // document.removeEventListener('mouseleave', handleMouseLeave, false);
     };
-  }, [isActive, handler, ...deps]);
+  }, [
+    isBrowser,
+    isActive,
+    viewportDimensions,
+    moveHandler,
+    downHandler,
+    dragHandler,
+    releaseHandler,
+    ...deps,
+  ]);
 
   return pointerState;
 }
