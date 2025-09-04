@@ -198,8 +198,6 @@ export function usePointer(
       // document.addEventListener('mouseleave', handleMouseLeave, false);
     }
 
-    console.log("BLAH");
-
     return () => {
       // Cleanup "down" state on detach
       if (pointerState.current.isDown) {
